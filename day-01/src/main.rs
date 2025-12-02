@@ -1,4 +1,3 @@
-
 macro_rules! read_lines {
     ($file:literal) => {
         {
