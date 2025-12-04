@@ -35,15 +35,32 @@ fn main() {
     }
 
     // Part 1
-    let part1 = rolls.iter()
-        .filter(|&roll| {
-            let cnt = DIRECTIONS.iter()
-                .filter(|&v| rolls.contains(&(roll + v)))
-                .count();
+    let mut removed = 0;
 
-            cnt < 4
-        })
-        .count();
+    for step in 0.. {
+        let removable: Vec<_> = rolls.iter()
+            .filter(|&roll| {
+                let cnt = DIRECTIONS.iter()
+                    .filter(|&v| rolls.contains(&(roll + v)))
+                    .count();
 
-    println!("part 01: {}", part1);
+                cnt < 4
+            })
+            .copied()
+            .collect();
+
+        println!("step {step:>2}: {}", removable.len());
+
+        removed += removable.len();
+
+        for roll in &removable {
+            rolls.remove(roll);
+        }
+
+        if removable.len() == 0 {
+            break;
+        }
+    }
+
+    println!("part 02: {}", removed);
 }
