@@ -1,3 +1,6 @@
+use std::cmp::max;
+use std::ops::RangeInclusive;
+
 macro_rules! read_lines {
     ($file:literal) => {
         {
@@ -29,11 +32,27 @@ fn main() {
         continue;
     }
 
-    // Paring ids
+    // Reducing ranges
+    let mut reduced_ranges: Vec<RangeInclusive<u64>> = Vec::new();
+
+    fresh_ranges.sort_by_key(|range| *range.start());
+
+    for range in fresh_ranges {
+        if let Some(prev) = reduced_ranges.last_mut() {
+            if prev.contains(range.start()) {
+                *prev = *prev.start()..=max(*prev.end(), *range.end());
+                continue;
+            }
+        }
+
+        reduced_ranges.push(range.clone());
+    }
+
+    // Part 1
     let mut part1 = 0;
 
     for id in lines.map(|line| line.parse::<u64>().unwrap()) {
-        let is_fresh = fresh_ranges.iter()
+        let is_fresh = reduced_ranges.iter()
             .any(|range| range.contains(&id));
 
         if is_fresh {
@@ -41,5 +60,11 @@ fn main() {
         }
     }
 
+    // Part 2
+    let part2 = reduced_ranges.iter()
+        .map(|range| range.end() - range.start() + 1)
+        .sum::<u64>();
+
     println!("part 01: {}", part1);
+    println!("part 02: {}", part2);
 }
