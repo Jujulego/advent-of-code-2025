@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 macro_rules! read_lines {
     ($file:literal) => {
         {
@@ -9,38 +11,52 @@ macro_rules! read_lines {
 }
 
 fn main() {
-    // Parse input
-    let lines: Vec<_> = read_lines!("day-06/input.txt")
-        .map(|line| line.split_whitespace()
-            .map(|part| part.to_string())
-            .collect::<Vec<_>>()
-        )
-        .collect();
+    let lines: Vec<_> = read_lines!("day-06/input.txt").collect();
 
-    let numbers: Vec<_> = lines[0..lines.len() - 1].iter()
-        .map(|terms| terms.iter()
-            .map(|term| term.parse::<u64>().unwrap())
-            .collect::<Vec<_>>()
-        )
-        .collect();
+    let numbers = &lines[0..lines.len()-1];
+    let mut signs = &lines.last().unwrap()[..];
 
-    let signs = &lines[lines.len() - 1];
+    // Extract problems
+    let mut problems = Vec::new();
 
-    assert!(numbers.iter().all(|terms| terms.len() == signs.len()));
+    while let Some(idx) = rfind_sign(signs) {
+        problems.push(Problem {
+            sign: signs[idx..].trim(),
+            range: idx..signs.len(),
+        });
+
+        signs = &signs[..idx.saturating_sub(1)];
+    }
 
     // Part 1
     let mut part1 = 0;
 
-    for i in 0..signs.len() {
-        let terms = numbers.iter().map(|terms| terms[i]);
-        let sign = &signs[i][0..1];
+    for problem in &problems {
+        let terms = numbers.iter()
+            .map(|terms| terms[problem.range.clone()]
+                .trim()
+                .parse::<u64>()
+                .unwrap()
+            );
 
-        part1 += match sign {
+        part1 += match problem.sign {
             "+" => terms.sum::<u64>(),
             "*" => terms.product::<u64>(),
-            _ => unreachable!("Unknown sign {sign}")
+            _ => unreachable!("Unknown sign {}", problem.sign),
         }
     }
 
     println!("part 01: {}", part1);
+}
+
+#[derive(Debug)]
+struct Problem<'a> {
+    sign: &'a str,
+    range: Range<usize>,
+}
+
+fn rfind_sign(line: &str) -> Option<usize> {
+    [line.rfind('+'), line.rfind('*')].iter()
+        .filter_map(|&idx| idx)
+        .max()
 }
