@@ -47,6 +47,35 @@ fn main() {
     }
 
     println!("part 01: {}", part1);
+
+    // Part 2
+    let mut part2 = 0;
+
+    for problem in &problems {
+        let mut terms = Vec::new();
+
+        for idx in problem.range.clone() {
+            let mut factor = 1;
+            let mut term = 0;
+
+            for line in numbers.iter().rev() {
+                if let Ok(digit) = line[idx..idx+1].parse::<u64>() {
+                    term += digit * factor;
+                    factor *= 10;
+                }
+            }
+
+            terms.push(term);
+        }
+
+        part2 += match problem.sign {
+            "+" => terms.iter().sum::<u64>(),
+            "*" => terms.iter().product::<u64>(),
+            _ => unreachable!("Unknown sign {}", problem.sign),
+        }
+    }
+
+    println!("part 02: {}", part2);
 }
 
 #[derive(Debug)]
