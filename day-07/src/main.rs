@@ -1,5 +1,6 @@
-use std::collections::{HashSet, VecDeque};
-use nalgebra::{point, vector};
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::hash_map::Entry;
+use nalgebra::{point, vector, Point2};
 
 macro_rules! read_lines {
     ($file:literal) => {
@@ -36,32 +37,60 @@ fn main() {
     // Search impacted splitters
     let mut stack = VecDeque::from([start]);
     let mut visited = HashSet::new();
-    let mut marks = HashSet::new();
+    let mut timelines = HashMap::new();
+    let mut paths = HashMap::new();
 
     while let Some(point) = stack.pop_back() {
-        let next = point + vector![0, 1];
-
-        if point.y >= end_y { // Reached the end
-            continue;
+        // Mark timeline
+        match timelines.entry(point) {
+            Entry::Occupied(entry) => {
+                let inc = *entry.get();
+                increment_timelines(point, &paths, &mut timelines, inc);
+                continue;
+            },
+            Entry::Vacant(entry) => {
+                entry.insert(0);
+            }
         }
 
-        // Mark position
-        if marks.contains(&next) {
+        // Reached the end
+        if point.y >= end_y {
+            timelines.insert(point, 1);
+            increment_timelines(point, &paths, &mut timelines, 1);
             continue;
         }
-
-        marks.insert(next.clone());
 
         // Interact
-        if splitters.contains(&next) {
-            visited.insert(next.clone());
+        let next = point + vector![0, 1];
 
-            stack.push_back(next + vector![ 1, 0]);
-            stack.push_back(next + vector![-1, 0]);
+        if splitters.contains(&next) {
+            visited.insert(point);
+
+            let right = point + vector![1, 1];
+            paths.insert(right, point);
+            stack.push_back(right);
+
+            let left = point + vector![-1, 1];
+            paths.insert(left, point);
+            stack.push_back(left);
         } else {
+            paths.insert(next, point);
             stack.push_back(next);
         }
     }
 
     println!("part 01: {}", visited.len());
+    println!("part 02: {}", timelines.get(&start).unwrap());
+}
+
+fn increment_timelines(
+    mut point: Point2<i32>,
+    paths: &HashMap<Point2<i32>, Point2<i32>>,
+    timelines: &mut HashMap<Point2<i32>, usize>,
+    inc: usize,
+) {
+    while let Some(&previous) = paths.get(&point) {
+        point = previous;
+        *timelines.get_mut(&point).unwrap() += inc;
+    }
 }
