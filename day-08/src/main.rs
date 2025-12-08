@@ -40,8 +40,9 @@ fn main() {
     // Build circuits
     println!("Building circuits ...");
     let mut circuits: Vec<HashSet<Point3<i64>>> = vec![];
+    let mut leftover: HashSet<Point3<i64>> = HashSet::from_iter(boxes);
 
-    for Pair(point_a, point_b) in pairs.iter().take(1000) {
+    for (idx, Pair(point_a, point_b)) in pairs.iter().enumerate() {
         print!("({:>5}, {:>5}, {:>5}) -> ({:>5}, {:>5}, {:>5}) ({:>8})",
                  point_a.x, point_a.y, point_a.z,
                  point_b.x, point_b.y, point_b.z,
@@ -55,28 +56,26 @@ fn main() {
         if let Some((mut idx_a, circuit_a)) = circuit_a {
             if circuit_a.contains(point_b) {
                 println!();
-
-                // Do nothing
-                continue;
-            }
-
-            let circuit_b = circuits.iter()
-                .enumerate()
-                .find(|(_, c)| c.contains(point_b));
-
-            if let Some((idx_b, _)) = circuit_b {
-                // Merge circuits
-                let circuit_b = circuits.remove(idx_b);
-                idx_a = if idx_b < idx_a { idx_a - 1 } else { idx_a };
-
-                circuits[idx_a].extend(circuit_b);
-
-                println!(" => merge")
             } else {
-                // Add point b to circuit a
-                circuits[idx_a].insert(*point_b);
+                let circuit_b = circuits.iter()
+                    .enumerate()
+                    .find(|(_, c)| c.contains(point_b));
 
-                println!(" => add b")
+                if let Some((idx_b, _)) = circuit_b {
+                    // Merge circuits
+                    let circuit_b = circuits.remove(idx_b);
+                    idx_a = if idx_b < idx_a { idx_a - 1 } else { idx_a };
+
+                    circuits[idx_a].extend(circuit_b);
+
+                    println!(" => merge");
+                } else {
+                    // Add point b to circuit a
+                    circuits[idx_a].insert(*point_b);
+                    leftover.remove(point_b);
+
+                    println!(" => add b");
+                }
             }
         } else {
             let circuit_b = circuits.iter_mut()
@@ -85,27 +84,38 @@ fn main() {
             if let Some(circuit_b) = circuit_b {
                 // Add point a to circuit b
                 circuit_b.insert(*point_a);
+                leftover.remove(point_a);
 
-                println!(" => add a")
+                println!(" => add a");
             } else {
                 // Add new circuit
                 circuits.push(HashSet::from([*point_a, *point_b]));
+                leftover.remove(point_a);
+                leftover.remove(point_b);
 
-                println!(" => new")
+                println!(" => new");
             }
+        }
+
+        if idx == 999 {
+            let part1: usize = circuits.iter()
+                .rev()
+                .take(3)
+                .map(|circuit| circuit.len())
+                .product();
+
+            println!("part 01: {}", part1);
+        }
+
+        if leftover.is_empty() {
+            let part2 = point_a.x * point_b.x;
+
+            println!("part 02: {}", part2);
+            break;
         }
     }
 
     println!("Done !");
-    circuits.sort_by_key(|circuit| circuit.len());
-
-    let part1: usize = circuits.iter()
-        .rev()
-        .take(3)
-        .map(|circuit| circuit.len())
-        .product();
-
-    println!("part 01: {}", part1);
 }
 
 #[derive(Debug, Eq, PartialEq)]
